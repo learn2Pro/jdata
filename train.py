@@ -47,8 +47,8 @@ def get_percent_change(dates, num, has_bad, commnet_rate):
     daydis = datediff(date[0], date[size - 2])
     if daydis != 0:
         percent = (float(cr[0]) - float(cr[size - 2])) / datediff(date[0], date[size - 2])
-        rslist += [date[0], num[0], has_bad[0], cr[0], percent]
-        return percent
+        rslist += [datediff(date[0], "2016-04-11"), num[0], has_bad[0], cr[0], percent]
+        return rslist
     else:
         return ([0] * 5)
 
