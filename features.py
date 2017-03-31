@@ -114,7 +114,7 @@ def handle_user_action(user_action):
     user_action["hour"] = user_action.time.map(lambda x: x.split(' ')[1].split(':')[0])
     user_action["date"] = user_action["date"].fillna(user_action["date"].min())
     ## todo change to user_action["model_id"].mean()
-    user_action["model_id"] = user_action["model_id"].fillna("0")
+    user_action["model_id"] = user_action["model_id"].fillna(user_action["model_id"].mean())
     user_action = user_action.drop(["time"], axis=1)
     user_action[['date', 'hour', 'type']] += "|"
     user_action = user_action.groupby(['user_id', 'sku_id', 'cate', 'brand', 'model_id']).sum().reset_index()

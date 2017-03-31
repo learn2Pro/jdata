@@ -46,7 +46,7 @@ def get_percent_change(dates, num, has_bad, commnet_rate):
     date = dates.split('|')
     daydis = datediff(date[0], date[size - 2])
     if daydis != 0:
-        percent = (float(cr[0]) - float(cr[size - 2])) / datediff(date[0], date[size - 1])
+        percent = (float(cr[0]) - float(cr[size - 2])) / datediff(date[0], date[size - 2])
         rslist += [date[0], num[0], has_bad[0], cr[0], percent]
         return percent
     else:
@@ -56,9 +56,8 @@ def get_percent_change(dates, num, has_bad, commnet_rate):
 comment = pd.read_csv(os.path.join(os.getcwd(), "data", "JData_Comment.csv"),
                       dtype={'dt': object, 'comment_num': object,
                              'has_bad_comment': object, 'bad_comment_rate': object})
-# for comment in comments:
+
 comment[['dt', 'comment_num', 'has_bad_comment', 'bad_comment_rate']] += '|'
-comment.loc[:, 'dt'] = comment['dt'].apply(lambda x: x[0].replace("-", "/"))
 comment = comment.groupby('sku_id').sum().reset_index()
 comment.loc[:, 'feature'] = comment.apply(
     lambda x: get_percent_change(x['dt'], x['comment_num'], x['has_bad_comment'], x['bad_comment_rate']), axis=1)
