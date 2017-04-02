@@ -21,58 +21,65 @@ from sklearn import svm
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn import metrics
 
+train = pd.read_csv(os.path.join(os.getcwd(), "data", "user_action.csv"))
 
-def strtodatetime(datestr, format):
-    return datetime.datetime.strptime(datestr, format)
+test = pd.read_csv(os.path.join(os.getcwd(), "data", "user_action_test.csv"))
 
+# train["date"] = train["date"].fillna('0')
+# train["num"] = train["num"].fillna('0')
+# train["has_bad"] = train["has_bad"].fillna('0')
+# train["rate"] = train["rate"].fillna('0')
+# train["comment_rate"] = train["comment_rate"].fillna('0')
+# train["attr1"] = train["attr1"].fillna('0')
+# train["attr2"] = train["attr2"].fillna('0')
+# train["attr3"] = train["attr3"].fillna('0')
+#
+# test["date"] = test["date"].fillna('0')
+# test["num"] = test["num"].fillna('0')
+# test["has_bad"] = test["has_bad"].fillna('0')
+# test["rate"] = test["rate"].fillna('0')
+# test["comment_rate"] = test["comment_rate"].fillna('0')
+# test["attr1"] = test["attr1"].fillna('0')
+# test["attr2"] = test["attr2"].fillna('0')
+# test["attr3"] = test["attr3"].fillna('0')
 
-## 计算时间相差天数
-def datediff(beginDate, endDate):
-    format = "%Y-%m-%d"
-    bd = strtodatetime(beginDate, format)
-    ed = strtodatetime(endDate, format)
-    count = (ed - bd).days
-    return count
+# predictors = ["user_id", "sku_id", "cate", "brand", "model_std", "view_value", "cart_value", "order_value",
+#               "follow_value",
+#               "click_value", "last_order", "date", "num", "has_bad", "rate", "comment_rate", "age", "sex", "user_lv_cd",
+#               "reg_time",
+#               "attr1", "attr2", "attr3"]
+predictors = ["user_id", "sku_id", "cate", "brand", "view_value", "cart_value", "order_value",
+              "follow_value", "click_value", "last_order"]
+results = []
+groud_truth = train["label"][1000001:]
+for leaf_size in range(1, 500, 10):
+    for estimators_size in range(1, 1000, 20):
+        algorithm = RandomForestClassifier(min_samples_leaf=leaf_size,
+                                           n_estimators=estimators_size, random_state=50)
+        algorithm.fit(train[predictors][:1000000], train["label"][:1000000])
+        predict = algorithm.predict(train[predictors][1000001:])
+        # 用一个三元组，分别记录当前的 min_samples_leaf，n_estimators， 和在测试数据集上的精度
+        ratio = (groud_truth == predict).mean()
+        results.append((leaf_size, estimators_size, ratio))
+        print (leaf_size, estimators_size, ratio)
+        # 真实结果和预测结果进行比较，计算准确率
 
-
-def get_percent_change(dates, num, has_bad, commnet_rate):
-    cr = commnet_rate.split('|')
-    rslist = []
-    size = len(cr)
-    if size <= 2:
-        return ([0] * 5)
-    num = num.split('|')
-    has_bad = has_bad.split('|')
-    date = dates.split('|')
-    daydis = datediff(date[0], date[size - 2])
-    if daydis != 0:
-        percent = (float(cr[0]) - float(cr[size - 2])) / datediff(date[0], date[size - 2])
-        rslist += [datediff(date[0], "2016-04-11"), num[0], has_bad[0], cr[0], percent]
-        return rslist
-    else:
-        return ([0] * 5)
-
-
-comment = pd.read_csv(os.path.join(os.getcwd(), "data", "JData_Comment.csv"),
-                      dtype={'dt': object, 'comment_num': object,
-                             'has_bad_comment': object, 'bad_comment_rate': object})
-
-comment[['dt', 'comment_num', 'has_bad_comment', 'bad_comment_rate']] += '|'
-comment = comment.groupby('sku_id').sum().reset_index()
-comment.loc[:, 'feature'] = comment.apply(
-    lambda x: get_percent_change(x['dt'], x['comment_num'], x['has_bad_comment'], x['bad_comment_rate']), axis=1)
-
-comment.loc[:, 'date'] = comment['feature'].apply(lambda x: x[0])
-comment.loc[:, 'num'] = comment['feature'].apply(lambda x: x[1])
-comment.loc[:, 'has_bad'] = comment['feature'].apply(lambda x: x[2])
-comment.loc[:, 'commnet_rate'] = comment['feature'].apply(lambda x: x[3])
-comment.loc[:, 'rate'] = comment['feature'].apply(lambda x: x[4])
-
-comment = comment.drop(comment['feature'], axis=1)
-comment = comment.drop(comment['dt'], axis=1)
-comment = comment.drop(comment['comment_num'], axis=1)
-comment = comment.drop(comment['has_bad_comment'], axis=1)
-comment = comment.drop(comment['bad_comment_rate'], axis=1)
-
-comment.to_csv(os.path.join(os.getcwd(), 'date', 'comment.csv'), index=False, index_label=False)
-print comment.head(5)
+# 打印精度最大的那一个三元组
+result = max(results, key=lambda x: x[2])
+print result
+# alg = RandomForestClassifier(min_samples_leaf=151,
+#                              n_estimators=121, random_state=50)
+# alg.fit(train[predictors][:], train["label"][:])
+# predict = alg.predict(test[predictors][:])
+#
+# print len(test)
+# test = test.loc[:, ['user_id', 'sku_id']]
+# test['label'] = predict
+# predict = test[test['label'] == 1].drop(['label'], axis=1)
+# print len(predict)
+# print predict.tail(5)
+# submission = pd.DataFrame({
+#     "user_id": predict["user_id"],
+#     "sku_id": predict["sku_id"]
+# })
+# submission.to_csv(os.path.join(os.getcwd(), 'data', 'result.csv'), index=False, index_label=False)
