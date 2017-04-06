@@ -13,7 +13,6 @@ import math
 
 matplotlib.use('Agg')
 
-from sklearn.cross_validation import cross_val_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -41,19 +40,19 @@ def datediff(beginDate, endDate):
 
 
 def get_percent_change(dates, num, has_bad, commnet_rate):
-    cr = commnet_rate.split('|')
     rslist = []
-    num = num.split('|')
-    has_bad = has_bad.split('|')
-    date = dates.split('|')
+    cr = commnet_rate.split('|')[:-1]
+    num = num.split('|')[:-1]
+    has_bad = has_bad.split('|')[:-1]
+    date = dates.split('|')[:-1]
     size = len(cr)
     percent = 0.0
     if size <= 2:
         return ([date[0], num[0], has_bad[0], percent])
     last_action = []
-    for i in range(len(date) - 2):
-        last_action.append(datediff(date[i], "2016-04-16"))
-    percent = sigmoid(float(cr[0]) - float(cr[size - 2])) - sigmoid(datediff(date[0], date[size - 2]))
+    for i in range(len(date)):
+        last_action.append(datediff(date[i], "2016-04-11"))
+    percent = sigmoid(float(cr[0]) - float(cr[size - 1])) / sigmoid(datediff(date[0], date[size - 1]))
     rslist += [min(last_action), num[0], has_bad[0], percent]
     return (rslist)
 
@@ -71,7 +70,7 @@ print comment.head(5)
 comment.loc[:, 'date'] = comment['feature'].apply(lambda x: x[0])
 comment.loc[:, 'num'] = comment['feature'].apply(lambda x: x[1])
 comment.loc[:, 'has_bad'] = comment['feature'].apply(lambda x: x[2])
-comment.loc[:, 'rate'] = comment['feature'].apply(lambda x: x[3])
+comment.loc[:, 'percent'] = comment['feature'].apply(lambda x: x[3])
 comment.loc[:, 'comment_rate'] = comment['bad_comment_rate'].apply(lambda x: x[0].split('|')[0])
 
 comment = comment.drop(['feature'], axis=1)
@@ -80,7 +79,7 @@ comment = comment.drop(['comment_num'], axis=1)
 comment = comment.drop(['has_bad_comment'], axis=1)
 comment = comment.drop(['bad_comment_rate'], axis=1)
 
-comment.to_csv(os.path.join(os.getcwd(), 'data', 'comment_test.csv'), index=False, index_label=False)
+comment.to_csv(os.path.join(os.getcwd(), 'data', 'comment.csv'), index=False, index_label=False)
 print comment.head(5)
 
 

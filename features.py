@@ -12,15 +12,6 @@ import glob
 
 matplotlib.use('Agg')
 
-from sklearn.cross_validation import cross_val_score
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn import svm
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn import metrics
-
 
 # 通过时间划分训练集和测试集
 def SplitTrainandTestData(users, date):
@@ -69,42 +60,54 @@ def get_label(x, y, begin, end):
 
 ## bahavior_type, date,
 ## Basic features including:
-def get_basic_features(x, y, z, begin, end):
+def get_basic_features(x, y, h, z, begin, end):
     try:
-        y = y.split('|')
-        x = x.split('|')
-        z = z.split('|')
+        y = y.split('|')[:-1]
+        x = x.split('|')[:-1]
+        z = z.split('|')[:-1]
+        h = h.split('|')[:-1]
         basic_features = []
+        model_array = []
+        for i in z:
+            if i != '0':
+                model_array.append(int(i))
         if len(x) == 0:
-            return ([0] * 7)
-        model_std, view_value, cart_value, order_value, follow_value, click_value = 0, 0, 0, 0, 0, 0
-        zArray = np.array(z[:-1], dtype=np.float)
-        model_std = zArray.std()
+            return ([0, 0, 0, 0, 0, 0, -1, -1, -1, -1])
+        model_std, view_value, cart_value, order_value, cancel_cart_value, follow_value, click_value = -1, 0, 0, 0, 0, 0, 0
+        if len(model_array) != 0:
+            model_std = np.var(model_array)
         last_action = []
-        for i in range(len(x) - 1):
-            if y[i] <= begin and y[i] >= end:
+        last_cart = []
+        last_cancel_cart = []
+        for i in range(len(x)):
+            if y[i] >= end:
                 continue
             if x[i] == '1':
-                view_value += np.exp(-0.3 * datediff(y[i], end))
+                view_value += np.exp(-0.3 * (datediff(y[i], end)))
             if x[i] == '2':
-                cart_value += np.exp(-0.05 * datediff(y[i], end))
+                cart_value += np.exp(-0.1 * datediff(y[i], end))
+                last_cart.append(datediff(y[i], end) * 24 - int(h[i]))
             if x[i] == '3':
-                cart_value -= np.exp(-0.05 * datediff(y[i], end))
+                cancel_cart_value += np.exp(-0.05 * datediff(y[i], end))
+                last_cancel_cart.append(datediff(y[i], end) * 24 - int(h[i]))
             if x[i] == '4':
                 order_value += 1
             if x[i] == '5':
                 follow_value += np.exp(-0.15 * datediff(y[i], end))
             if x[i] == '6':
                 click_value += np.exp(-0.3 * datediff(y[i], end))
-            last_action.append(datediff(y[i], end))
+            last_action.append(datediff(y[i], end) * 24 - int(h[i]))
         if len(last_action) == 0:
-            return ([0] * 7)
-        ## todo 加入时间hour
-        basic_features += [view_value, cart_value, order_value, follow_value, click_value, min(last_action), model_std]
+            return ([0, 0, 0, 0, 0, 0, -1, -1, -1, -1])
+        basic_features += [view_value, cart_value, cancel_cart_value, order_value, follow_value, click_value,
+                           min(last_action),
+                           (-1 if len(last_cart) == 0 else min(last_cart)),
+                           (-1 if len(last_cancel_cart) == 0 else min(last_cancel_cart)),
+                           model_std]
         return (basic_features)
     except Exception as e:
-        print "get_basic_features!!====" + e
-        return ([0] * 7)
+        print e
+        return ([0, 0, 0, 0, 0, 0, -1, -1, -1, -1])
 
 
 def handle_users(users, time):
@@ -115,8 +118,9 @@ def handle_users(users, time):
     users.loc[users["age"] == "46-55岁".decode("utf-8"), "age"] = 4
     users.loc[users["age"] == "56岁以上".decode("utf-8"), "age"] = 5
     users.loc[users["age"] == "-1".decode("utf-8"), "age"] = -1
-    users.loc[:, 'reg_time'] = users.apply(lambda x: datediff(x['user_reg_dt'].replace(r"/", r"-"), time), axis=1)
-    users = users.drop(['user_reg_dt'], axis=1)
+    users['user_reg_tm'] = users['user_reg_tm'].fillna('2014-01-01')
+    users.loc[:, 'reg_time'] = users.apply(lambda x: datediff(str(x['user_reg_tm']), time), axis=1)
+    users = users.drop(['user_reg_tm'], axis=1)
     return users
 
 
@@ -125,7 +129,7 @@ def handle_user_action(user_action):
     user_action["hour"] = user_action.time.map(lambda x: x.split(' ')[1].split(':')[0])
     user_action["date"] = user_action["date"].fillna(user_action["date"].min())
     ## todo change to user_action["model_id"].median()
-    user_action["model_id"] = user_action["model_id"].fillna(str(user_action["model_id"].median()))
+    user_action["model_id"] = user_action["model_id"].fillna("0")
     user_action = user_action.drop(["time"], axis=1)
     user_action[['date', 'hour', 'type', 'model_id']] += "|"
     user_action = user_action.groupby(['user_id', 'sku_id', 'cate', 'brand']).sum().reset_index()
@@ -133,9 +137,9 @@ def handle_user_action(user_action):
 
 
 # 处理user表
-# users = pd.read_csv(os.path.join(os.getcwd(), "data", "JData_User.csv"), encoding='gbk')
-# users = handle_users(users, '2016-04-16')
-# users.to_csv(os.path.join(os.getcwd(), "data", "users_test.csv"), index=False, index_label=False)
+# users = pd.read_csv(os.path.join(os.getcwd(), "data", "JData_User.csv"), encoding='gbk', dtype={'user_reg_tm': object})
+# users = handle_users(users, '2016-04-11')
+# users.to_csv(os.path.join(os.getcwd(), "data", "users.csv"), index=False, index_label=False)
 # print users.head(5)
 
 # for filepath in glob.glob(os.path.join(os.getcwd(), "data", "JData_Action*.csv")):
@@ -147,22 +151,27 @@ user_sku_actions = pd.read_csv(os.path.join(os.getcwd(), "data", "JData_Action_2
 user_sku_action = handle_user_action(user_sku_actions)
 print user_sku_action.head(10)
 user_sku_action.loc[:, 'basic_feature'] = user_sku_action.apply(
-    lambda x: get_basic_features(x['type'], x['date'], x['model_id'], "2016-04-06", "2016-04-16"), axis=1)
+    lambda x: get_basic_features(x['type'], x['date'], x['hour'], x['model_id'], "2016-04-01", "2016-04-11"),
+    axis=1)
 user_sku_action.loc[:, 'view_value'] = user_sku_action['basic_feature'].apply(lambda x: x[0])
 user_sku_action.loc[:, 'cart_value'] = user_sku_action['basic_feature'].apply(lambda x: x[1])
-user_sku_action.loc[:, 'order_value'] = user_sku_action['basic_feature'].apply(lambda x: x[2])
-user_sku_action.loc[:, 'follow_value'] = user_sku_action['basic_feature'].apply(lambda x: x[3])
-user_sku_action.loc[:, 'click_value'] = user_sku_action['basic_feature'].apply(lambda x: x[4])
-user_sku_action.loc[:, 'last_order'] = user_sku_action['basic_feature'].apply(lambda x: x[5])
-user_sku_action.loc[:, 'model_std'] = user_sku_action['basic_feature'].apply(lambda x: x[6])
+user_sku_action.loc[:, 'cancel_cart_value'] = user_sku_action['basic_feature'].apply(lambda x: x[2])
+user_sku_action.loc[:, 'order_value'] = user_sku_action['basic_feature'].apply(lambda x: x[3])
+user_sku_action.loc[:, 'follow_value'] = user_sku_action['basic_feature'].apply(lambda x: x[4])
+user_sku_action.loc[:, 'click_value'] = user_sku_action['basic_feature'].apply(lambda x: x[5])
+user_sku_action.loc[:, 'last_order'] = user_sku_action['basic_feature'].apply(lambda x: x[6])
+user_sku_action.loc[:, 'last_cart'] = user_sku_action['basic_feature'].apply(lambda x: x[7])
+user_sku_action.loc[:, 'last_cancel_cart'] = user_sku_action['basic_feature'].apply(lambda x: x[8])
+user_sku_action.loc[:, 'model_std'] = user_sku_action['basic_feature'].apply(lambda x: x[9])
 user_sku_action = user_sku_action.drop(['basic_feature'], axis=1)
+
 print user_sku_action.head(5)
-# user_sku_action = get_basic_features(user_sku_action['date'], user_sku_action['type'], "2016/04/11")
-# user_sku_action.loc[:, 'label'] = user_sku_action.apply(
-#     lambda x: get_label(x['type'], x['date'], '2016-04-11',
-#                         '2016-04-15'), axis=1)
+user_sku_action.loc[:, 'label'] = user_sku_action.apply(
+    lambda x: get_label(x['type'], x['date'], '2016-04-11',
+                        '2016-04-16'), axis=1)
 user_sku_action = user_sku_action.drop(['date'], axis=1)
 user_sku_action = user_sku_action.drop(['hour'], axis=1)
 user_sku_action = user_sku_action.drop(['type'], axis=1)
-user_sku_action.to_csv(os.path.join(os.getcwd(), "data", "user_action_test.csv"), index=False, index_label=False)
+user_sku_action = user_sku_action.drop(['model_id'], axis=1)
+user_sku_action.to_csv(os.path.join(os.getcwd(), "data", "user_action.csv"), index=False, index_label=False)
 # print user_sku_action[user_sku_action['label'] == 1].head(5)

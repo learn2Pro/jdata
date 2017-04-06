@@ -12,7 +12,6 @@ import glob
 
 matplotlib.use('Agg')
 
-from sklearn.cross_validation import cross_val_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -21,65 +20,99 @@ from sklearn import svm
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn import metrics
 
-train = pd.read_csv(os.path.join(os.getcwd(), "data", "user_action.csv"))
 
-test = pd.read_csv(os.path.join(os.getcwd(), "data", "user_action_test.csv"))
+# F11=6*Recall*Precise/(5*Recall+Precise)
+def F11(right, train_len, test_len):
+    Recall = right / train_len
+    Precise = right / test_len
+    return 6 * Recall * Precise / (5 * Recall + Precise + 1)
 
-# train["date"] = train["date"].fillna('0')
-# train["num"] = train["num"].fillna('0')
-# train["has_bad"] = train["has_bad"].fillna('0')
-# train["rate"] = train["rate"].fillna('0')
-# train["comment_rate"] = train["comment_rate"].fillna('0')
-# train["attr1"] = train["attr1"].fillna('0')
-# train["attr2"] = train["attr2"].fillna('0')
-# train["attr3"] = train["attr3"].fillna('0')
+
+train = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train.csv"))
+
+test = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train_test.csv"))
+
+
+# train = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train.csv"))
 #
-# test["date"] = test["date"].fillna('0')
-# test["num"] = test["num"].fillna('0')
-# test["has_bad"] = test["has_bad"].fillna('0')
-# test["rate"] = test["rate"].fillna('0')
-# test["comment_rate"] = test["comment_rate"].fillna('0')
-# test["attr1"] = test["attr1"].fillna('0')
-# test["attr2"] = test["attr2"].fillna('0')
-# test["attr3"] = test["attr3"].fillna('0')
+# test = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train_test.csv"))
 
-# predictors = ["user_id", "sku_id", "cate", "brand", "model_std", "view_value", "cart_value", "order_value",
+# train = pd.read_csv(os.path.join(os.getcwd(), "data", "action_feature_ratio.csv"))
+#
+# test = pd.read_csv(os.path.join(os.getcwd(), "data", "action_feature_ratio_test.csv"))
+
+# train = pd.read_csv(os.path.join(os.getcwd(), "data", "user_action.csv"))
+#
+# test = pd.read_csv(os.path.join(os.getcwd(), "data", "user_action_test.csv"))
+
+# train["age"] = train["age"].fillna("-1")
+# train["sex"] = train["sex"].fillna("-1")
+# test["age"] = test["age"].fillna("-1")
+# test["sex"] = test["sex"].fillna("-1")
+
+# predictors = ["cate", "brand", "view_value", "cart_value", "cancel_cart_value", "order_value",
 #               "follow_value",
-#               "click_value", "last_order", "date", "num", "has_bad", "rate", "comment_rate", "age", "sex", "user_lv_cd",
-#               "reg_time",
-#               "attr1", "attr2", "attr3"]
-predictors = ["user_id", "sku_id", "cate", "brand", "view_value", "cart_value", "order_value",
-              "follow_value", "click_value", "last_order"]
-results = []
-groud_truth = train["label"][1000001:]
-for leaf_size in range(1, 500, 10):
-    for estimators_size in range(1, 1000, 20):
-        algorithm = RandomForestClassifier(min_samples_leaf=leaf_size,
-                                           n_estimators=estimators_size, random_state=50)
-        algorithm.fit(train[predictors][:1000000], train["label"][:1000000])
-        predict = algorithm.predict(train[predictors][1000001:])
-        # 用一个三元组，分别记录当前的 min_samples_leaf，n_estimators， 和在测试数据集上的精度
-        ratio = (groud_truth == predict).mean()
-        results.append((leaf_size, estimators_size, ratio))
-        print (leaf_size, estimators_size, ratio)
-        # 真实结果和预测结果进行比较，计算准确率
+#               "click_value", "last_order", 'last_cart', 'last_cancel_cart']
 
-# 打印精度最大的那一个三元组
-result = max(results, key=lambda x: x[2])
-print result
-# alg = RandomForestClassifier(min_samples_leaf=151,
-#                              n_estimators=121, random_state=50)
-# alg.fit(train[predictors][:], train["label"][:])
-# predict = alg.predict(test[predictors][:])
+# predictors = ["user_buy_follow_ratio", "user_buy_cart_ratio",
+#               "user_buy_cancel_ratio",
+#               "user_buy_click_ratio", "user_buy_view_ratio", "user_len_buy", "user_len_cate",
+#               "user_len_sku", "user_len_brand", "sku_buy_follow_ratio", "sku_buy_cart_ratio",
+#               "sku_buy_cancel_ratio", "sku_buy_click_ratio", "sku_buy_view_ratio", "sku_len_buy",
+#               "sku_len_cate", "sku_len_user", "sku_len_brand",
+#               "cate", "brand", "view_value", "cart_value", "cancel_cart_value", "order_value",
+#               "follow_value", "click_value", 'last_order', 'last_cart', 'last_cancel_cart', 'model_std']
+
+predictors = ["a1", "a2", "a3", "age", "sex", "user_lv_cd", "reg_time", "user_buy_follow_ratio", "user_buy_cart_ratio",
+              "user_buy_cancel_ratio",
+              "user_buy_click_ratio", "user_buy_view_ratio", "user_len_buy", "user_len_cate",
+              "user_len_sku", "user_len_brand", "sku_buy_follow_ratio", "sku_buy_cart_ratio",
+              "sku_buy_cancel_ratio", "sku_buy_click_ratio", "sku_buy_view_ratio", "sku_len_buy",
+              "sku_len_cate", "sku_len_user", "sku_len_brand",
+              "cate", "brand", "view_value", "cart_value", "cancel_cart_value", "order_value",
+              "follow_value", "click_value", 'last_order', 'last_cart', 'last_cancel_cart', 'model_std',
+              "date", "num", "has_bad", "percent", "comment_rate"]
+
+results = []
+
+# train_len = 500000
+# test_len = len(train) - 500000
+# groud_truth = train["label"][500001:]
+# for leaf_size in range(1, 500, 50):
+#     for estimators_size in range(1, 1000, 100):
+#         algorithm = RandomForestClassifier(min_samples_leaf=leaf_size,
+#                                            n_estimators=estimators_size, random_state=50)
+#         algorithm.fit(train[predictors][:500000], train["label"][:500000])
+#         predict = algorithm.predict(train[predictors][500001:])
+#         # 用一个三元组，分别记录当前的 min_samples_leaf，n_estimators， 和在测试数据集上的精度
+#         right = 0
+#         for i in range(len(groud_truth)):
+#             x = 500001 + i
+#             if groud_truth[x] == 1 and predict[i] == 1:
+#                 right += 1
+#         f11 = F11(right, train_len, test_len)
+#         results.append((leaf_size, estimators_size, f11))
+#         print (leaf_size, estimators_size, f11)
+#         # 真实结果和预测结果进行比较，计算准确率
 #
-# print len(test)
-# test = test.loc[:, ['user_id', 'sku_id']]
-# test['label'] = predict
-# predict = test[test['label'] == 1].drop(['label'], axis=1)
-# print len(predict)
-# print predict.tail(5)
-# submission = pd.DataFrame({
-#     "user_id": predict["user_id"],
-#     "sku_id": predict["sku_id"]
-# })
-# submission.to_csv(os.path.join(os.getcwd(), 'data', 'result.csv'), index=False, index_label=False)
+# # # 打印精度最大的那一个三元组
+# result = max(results, key=lambda x: x[2])
+# print result
+
+
+alg = RandomForestClassifier(100)
+alg.fit(train[predictors][:], train["label"][:])
+predict = alg.predict(test[predictors][:])
+
+print len(test)
+test = test.loc[:, ['user_id', 'sku_id']]
+test['label'] = predict
+predict = test[test['label'] == 1].drop(['label'], axis=1)
+print len(predict)
+print predict.tail(5)
+submission = pd.DataFrame({
+    "user_id": predict["user_id"],
+    "sku_id": predict["sku_id"]
+})
+submission.drop_duplicates('user_id', inplace=True)
+submission.to_csv(os.path.join(os.getcwd(), 'data', 'result.csv'), index=False, index_label=False)
