@@ -83,19 +83,19 @@ def get_basic_features(x, y, h, z, begin, end):
             if y[i] >= end:
                 continue
             if x[i] == '1':
-                view_value += np.exp(-0.3 * (datediff(y[i], end)))
+                view_value += np.exp(-0.3 * datediff(y[i], end) * 24 - int(h[i]))
             if x[i] == '2':
-                cart_value += np.exp(-0.1 * datediff(y[i], end))
+                cart_value += np.exp(-0.1 * datediff(y[i], end) * 24 - int(h[i]))
                 last_cart.append(datediff(y[i], end) * 24 - int(h[i]))
             if x[i] == '3':
-                cancel_cart_value += np.exp(-0.05 * datediff(y[i], end))
+                cancel_cart_value += np.exp(-0.05 * datediff(y[i], end) * 24 - int(h[i]))
                 last_cancel_cart.append(datediff(y[i], end) * 24 - int(h[i]))
             if x[i] == '4':
                 order_value += 1
             if x[i] == '5':
-                follow_value += np.exp(-0.15 * datediff(y[i], end))
+                follow_value += np.exp(-0.15 * datediff(y[i], end) * 24 - int(h[i]))
             if x[i] == '6':
-                click_value += np.exp(-0.3 * datediff(y[i], end))
+                click_value += np.exp(-0.3 * datediff(y[i], end) * 24 - int(h[i]))
             last_action.append(datediff(y[i], end) * 24 - int(h[i]))
         if len(last_action) == 0:
             return ([0, 0, 0, 0, 0, 0, -1, -1, -1, -1])

@@ -28,9 +28,9 @@ def F11(right, train_len, test_len):
     return 6 * Recall * Precise / (5 * Recall + Precise + 1)
 
 
-train = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train.csv"))
-
-test = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train_test.csv"))
+# train = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train.csv"))
+#
+# test = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train_test.csv"))
 
 
 # train = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train.csv"))
@@ -41,9 +41,9 @@ test = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train_test.csv"))
 #
 # test = pd.read_csv(os.path.join(os.getcwd(), "data", "action_feature_ratio_test.csv"))
 
-# train = pd.read_csv(os.path.join(os.getcwd(), "data", "user_action.csv"))
-#
-# test = pd.read_csv(os.path.join(os.getcwd(), "data", "user_action_test.csv"))
+train = pd.read_csv(os.path.join(os.getcwd(), "data", "user_action.csv"))
+
+test = pd.read_csv(os.path.join(os.getcwd(), "data", "user_action_test.csv"))
 
 # train["age"] = train["age"].fillna("-1")
 # train["sex"] = train["sex"].fillna("-1")
@@ -52,26 +52,26 @@ test = pd.read_csv(os.path.join(os.getcwd(), "data", "feature_train_test.csv"))
 
 # predictors = ["cate", "brand", "view_value", "cart_value", "cancel_cart_value", "order_value",
 #               "follow_value",
-#               "click_value", "last_order", 'last_cart', 'last_cancel_cart']
+#               "click_value", "last_order", 'last_cart', 'last_cancel_cart','model_std']
 
-# predictors = ["user_buy_follow_ratio", "user_buy_cart_ratio",
-#               "user_buy_cancel_ratio",
-#               "user_buy_click_ratio", "user_buy_view_ratio", "user_len_buy", "user_len_cate",
-#               "user_len_sku", "user_len_brand", "sku_buy_follow_ratio", "sku_buy_cart_ratio",
-#               "sku_buy_cancel_ratio", "sku_buy_click_ratio", "sku_buy_view_ratio", "sku_len_buy",
-#               "sku_len_cate", "sku_len_user", "sku_len_brand",
-#               "cate", "brand", "view_value", "cart_value", "cancel_cart_value", "order_value",
-#               "follow_value", "click_value", 'last_order', 'last_cart', 'last_cancel_cart', 'model_std']
-
-predictors = ["a1", "a2", "a3", "age", "sex", "user_lv_cd", "reg_time", "user_buy_follow_ratio", "user_buy_cart_ratio",
+predictors = ["user_buy_follow_ratio", "user_buy_cart_ratio",
               "user_buy_cancel_ratio",
               "user_buy_click_ratio", "user_buy_view_ratio", "user_len_buy", "user_len_cate",
               "user_len_sku", "user_len_brand", "sku_buy_follow_ratio", "sku_buy_cart_ratio",
               "sku_buy_cancel_ratio", "sku_buy_click_ratio", "sku_buy_view_ratio", "sku_len_buy",
               "sku_len_cate", "sku_len_user", "sku_len_brand",
               "cate", "brand", "view_value", "cart_value", "cancel_cart_value", "order_value",
-              "follow_value", "click_value", 'last_order', 'last_cart', 'last_cancel_cart', 'model_std',
-              "date", "num", "has_bad", "percent", "comment_rate"]
+              "follow_value", "click_value", 'last_order', 'last_cart', 'last_cancel_cart', 'model_std']
+
+# predictors = ["a1", "a2", "a3", "age", "sex", "user_lv_cd", "reg_time", "user_buy_follow_ratio", "user_buy_cart_ratio",
+#               "user_buy_cancel_ratio",
+#               "user_buy_click_ratio", "user_buy_view_ratio", "user_len_buy", "user_len_cate",
+#               "user_len_sku", "user_len_brand", "sku_buy_follow_ratio", "sku_buy_cart_ratio",
+#               "sku_buy_cancel_ratio", "sku_buy_click_ratio", "sku_buy_view_ratio", "sku_len_buy",
+#               "sku_len_cate", "sku_len_user", "sku_len_brand",
+#               "cate", "brand", "view_value", "cart_value", "cancel_cart_value", "order_value",
+#               "follow_value", "click_value", 'last_order', 'last_cart', 'last_cancel_cart', 'model_std',
+#               "date", "num", "has_bad", "percent", "comment_rate"]
 
 results = []
 
@@ -115,4 +115,4 @@ submission = pd.DataFrame({
     "sku_id": predict["sku_id"]
 })
 submission.drop_duplicates('user_id', inplace=True)
-submission.to_csv(os.path.join(os.getcwd(), 'data', 'result.csv'), index=False, index_label=False)
+submission.to_csv(os.path.join(os.getcwd(), 'submit', 'result.csv'), index=False, index_label=False)
